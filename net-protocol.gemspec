@@ -1,6 +1,12 @@
+begin
+  require_relative "lib/net/protocol/version"
+rescue LoadError # Fallback to load version file in ruby core repository
+  require_relative "version"
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "net-protocol"
-  spec.version       = "0.1.0"
+  spec.version       = Net::Protocol::VERSION
   spec.authors = ["Yukihiro Matsumoto"]
   spec.email = ["matz@ruby-lang.org"]
 
