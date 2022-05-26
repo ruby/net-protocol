@@ -1,0 +1,236 @@
+# frozen_string_literal: true
+#
+# = net/protocol.rb
+#
+#--
+# Copyright (c) 1999-2004 Yukihiro Matsumoto
+# Copyright (c) 1999-2004 Minero Aoki
+#
+# written and maintained by Minero Aoki <aamine@loveruby.net>
+#
+# This program is free software. You can re-distribute and/or
+# modify this program under the same terms as Ruby itself,
+# Ruby Distribute License or GNU General Public License.
+#
+# $Id$
+#++
+#
+# WARNING: This file is going to remove.
+# Do not rely on the implementation written in this file.
+#
+
+module Net # :nodoc:
+
+  class Protocol   #:nodoc: internal use only
+    VERSION: string
+
+    private
+    def self.protocol_param: (String name, String val) -> void
+
+    def ssl_socket_connect: (OpenSSL::SSL::SSLSocket s, Integer timeout) -> void
+  end
+
+
+  class ProtocolError          < StandardError
+  end
+  class ProtoSyntaxError       < ProtocolError
+  end
+  class ProtoFatalError        < ProtocolError
+  end
+  class ProtoUnknownError      < ProtocolError
+  end
+  class ProtoServerError       < ProtocolError
+  end
+  class ProtoAuthError         < ProtocolError
+  end
+  class ProtoCommandError      < ProtocolError
+  end
+  class ProtoRetriableError    < ProtocolError
+  end
+  ProtocRetryError: Class
+
+  ##
+  # OpenTimeout, a subclass of Timeout::Error, is raised if a connection cannot
+  # be created within the open_timeout.
+
+  class OpenTimeout            < Timeout::Error
+  end
+
+  ##
+  # ReadTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # response cannot be read within the read_timeout.
+
+  class ReadTimeout < Timeout::Error
+    def initialize: (?IO? io) -> void
+
+    attr_reader io: IO?
+
+    def message: () -> String
+  end
+
+  ##
+  # WriteTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # response cannot be written within the write_timeout.  Not raised on Windows.
+
+  class WriteTimeout < Timeout::Error
+    def initialize: (?IO? io) -> void
+
+    attr_reader io: IO?
+
+    def message: () -> String
+  end
+
+
+  class BufferedIO   #:nodoc: internal use only
+    def initialize: (
+                    IO io,
+                    ?read_timeout: Integer,
+                    ?write_timeout: Integer,
+                    ?continue_timeout: Integer?,
+                    ?debug_output: IO?
+                  ) -> void
+
+    attr_reader io: IO
+    attr_accessor read_timeout: Integer
+    attr_accessor write_timeout: Integer
+    attr_accessor continue_timeout: Integer?
+    attr_accessor debug_output: IO?
+
+    def inspect: () -> String
+
+    def eof?: () -> bool
+
+    def closed?: () -> bool
+
+    def close: () -> void
+
+    #
+    # Read
+    #
+
+    public
+
+    def read: (Integer len, ?String dest, ?bool ignore_eof) -> String
+
+    def read_all: (String dest) -> String
+
+    def readuntil: (String terminator, ?bool ignore_eof) -> String
+
+    def readline: () -> String
+
+    private
+
+    BUFSIZE: Integer
+
+    def rbuf_fill: () -> void
+
+    def rbuf_consume: () -> String
+
+    #
+    # Write
+    #
+
+    public
+
+    def write: (*String strs) -> Integer
+
+    alias << write
+
+    def writeline: (String str) -> Integer
+
+    private
+
+    def writing: () { () -> String } -> Integer
+
+    def write0: (*String strs) -> void
+
+    #
+    # Logging
+    #
+
+    private
+
+    def LOG_off: () -> void
+
+    def LOG_on: () -> void
+
+    def LOG: (String msg) -> void
+  end
+
+
+  class InternetMessageIO < BufferedIO   #:nodoc: internal use only
+    #
+    # Read
+    #
+
+    def each_message_chunk: () { (String chunk) -> void } -> void
+
+    # *library private* (cannot handle 'break')
+    def each_list_item: () { (String item) -> void } -> void
+
+    def write_message_0: (String src) -> Integer
+
+    #
+    # Write
+    #
+
+    def write_message: (String src) -> Integer
+
+    def write_message_by_block: () { (Net::WriteAdapter adapter) -> void } -> Integer
+
+    private
+
+    def dot_stuff: (String s) -> String
+
+    def using_each_crlf_line: () -> void
+
+    def each_crlf_line: (String src) -> void
+
+    interface _Each
+      def each: () { (String str) -> void } -> void
+    end
+
+    def buffer_filling: (String buf, (String | File | _Each) src) { () -> void } -> void
+  end
+
+  #
+  # The writer adapter class
+  #
+  class WriteAdapter
+    def initialize: (IO io) -> void
+
+    def inspect: () -> String
+
+    def write: (String str) -> Integer
+
+    alias print write
+
+    def <<: (String str) -> self
+
+    def puts: (String str) -> Integer
+
+    def printf: (String fmt, *untyped args) -> Integer
+  end
+
+
+  class ReadAdapter   #:nodoc: internal use only
+    def initialize: (Proc? block) -> void
+
+    def inspect: () -> String
+
+    def <<: (String str) -> self
+
+    private
+
+    # This method is needed because @block must be called by yield,
+    # not Proc#call.  You can see difference when using `break' in
+    # the block.
+    def call_block: (String str) -> void
+  end
+
+
+  module NetPrivate   #:nodoc: obsolete
+    Socket: Class
+  end
+
+end   # module Net
