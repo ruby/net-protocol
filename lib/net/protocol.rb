@@ -274,7 +274,7 @@ module Net # :nodoc:
     end
 
     def rbuf_consume(len = nil)
-      if @rbuf_offset == 0 && (len.nil? || len == @rbuf.bytesize)
+      if @rbuf_offset == 0 && (len.nil? || len >= @rbuf.bytesize)
         s = @rbuf
         @rbuf = ''.b
         @rbuf_offset = 0
