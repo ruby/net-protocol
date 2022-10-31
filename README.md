@@ -1,6 +1,6 @@
 # Net::Protocol
 
-The abstruct interface for net-* client.
+The abstract interface for net-* client.
 
 ## Installation
 
