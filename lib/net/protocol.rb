@@ -195,7 +195,9 @@ module Net # :nodoc:
       offset = @rbuf_offset
       begin
         until idx = @rbuf.index(terminator, offset)
-          offset = @rbuf.bytesize
+          if @rbuf.bytesize - terminator.bytesize > @rbuf_offset
+            offset = @rbuf.bytesize - terminator.bytesize
+          end
           rbuf_fill
         end
         return rbuf_consume(idx + terminator.bytesize - @rbuf_offset)
