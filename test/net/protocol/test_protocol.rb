@@ -27,6 +27,26 @@ class TestProtocol < Test::Unit::TestCase
     end
   end
 
+  def test_each_message_chunk_boundary
+    assert_output("", "") do
+      # Create this first chunk where the chunk will end with the
+      # line terminator \r\n only being partially read up to and including \r.
+      chunk_1 = "#{"1" * (1024 * 16 - 1)}\r\n".b
+      chunk_2 = "Second line\r\n".b
+      chunk_3 = "Third line\r\n".b
+      test_string = "#{chunk_1}#{chunk_2}#{chunk_3}".b
+      sio = StringIO.new("#{test_string}.\r\n".b)
+      io = Net::InternetMessageIO.new(sio)
+      expected_chunks = []
+      io.each_message_chunk do |chunk|
+        expected_chunks << chunk
+      end
+      assert_equal chunk_1, expected_chunks[0]
+      assert_equal chunk_2, expected_chunks[1]
+      assert_equal chunk_3, expected_chunks[2]
+    end
+  end
+
   def create_mockio(capacity: 100, max: nil)
     mockio = Object.new
     mockio.instance_variable_set(:@str, +'')
