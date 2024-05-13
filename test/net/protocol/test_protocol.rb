@@ -31,7 +31,7 @@ class TestProtocol < Test::Unit::TestCase
     assert_output("", "") do
       # Create this first chunk where the chunk will end with the
       # line terminator \r\n only being partially read up to and including \r.
-      chunk_1 = "#{"1" * (1024 * 16 - 1)}\r\n".b
+      chunk_1 = "#{"1" * (Net::BufferedIO::BUFSIZE - 1)}\r\n".b
       chunk_2 = "Second line\r\n".b
       chunk_3 = "Third line\r\n".b
       test_string = "#{chunk_1}#{chunk_2}#{chunk_3}".b
