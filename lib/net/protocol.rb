@@ -152,10 +152,15 @@ module Net # :nodoc:
 
     public
 
-    def read(len, dest = ''.b, ignore_eof = false)
+    def read(len, dest = nil, ignore_eof = false)
       LOG "reading #{len} bytes..."
-      read_bytes = 0
       begin
+        if dest.nil?
+          dest = read_initial(len)
+          read_bytes = dest.bytesize
+        else
+          read_bytes = 0
+        end
         while read_bytes + rbuf_size < len
           if s = rbuf_consume_all
             read_bytes += s.bytesize
@@ -173,10 +178,15 @@ module Net # :nodoc:
       dest
     end
 
-    def read_all(dest = ''.b)
+    def read_all(dest = nil)
       LOG 'reading all...'
-      read_bytes = 0
       begin
+        if dest.nil?
+          dest = read_initial
+          read_bytes = dest.bytesize
+        else
+          read_bytes = 0
+        end
         while true
           if s = rbuf_consume_all
             read_bytes += s.bytesize
@@ -255,7 +265,7 @@ module Net # :nodoc:
     end
 
     def rbuf_consume(len = nil)
-      if @rbuf_offset == 0 && (len.nil? || len == @rbuf.bytesize)
+      if @rbuf_offset == 0 && (len.nil? || len >= @rbuf.bytesize)
         s = @rbuf
         @rbuf = ''.b
         @rbuf_offset = 0
@@ -274,6 +284,11 @@ module Net # :nodoc:
 
       @debug_output << %Q[-> #{s.dump}\n] if @debug_output
       s
+    end
+
+    def read_initial(len = nil)
+      rbuf_fill if @rbuf_empty
+      rbuf_consume(len)
     end
 
     #
