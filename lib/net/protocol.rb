@@ -209,7 +209,10 @@ module Net # :nodoc:
       offset = @rbuf_offset
       begin
         until idx = @rbuf.index(terminator, offset)
-          offset = @rbuf.bytesize
+          new_offset = @rbuf.bytesize - terminator.bytesize + 1
+          # Only assign the offset if it will advance.
+          # Otherwise an empty @rbuf could result in a negative offset.
+          offset = new_offset if new_offset > offset
           rbuf_fill
         end
         return rbuf_consume(idx + terminator.bytesize - @rbuf_offset)
