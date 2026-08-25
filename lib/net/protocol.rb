@@ -80,6 +80,28 @@ module Net # :nodoc:
   # :startdoc:
 
   ##
+  # ReadLimitExceeded, a subclass of ProtocolError, is raised if the
+  # terminator is not found within the byte limit given to
+  # Net::BufferedIO#readuntil.
+  #
+  # The limit is the largest result readuntil may return, counting the
+  # terminator itself, so a limit of 4 accepts "abc\n" and rejects
+  # "abcd\n". Unlike the limit of IO#gets it never truncates a result to
+  # fit. Either the whole thing comes back or this is raised, except
+  # under ignore_eof, which still returns what was buffered when the
+  # stream ended. The count is in bytes while the IO hands back binary
+  # strings, which every real one does.
+  #
+  # It bounds one call, not a connection. The unconsumed buffer can
+  # still run one BUFSIZE past the limit, and a peer sending endless
+  # short lines is not bounded at all.
+  #
+  # Nothing is consumed when this is raised, so the usual response is to
+  # close the connection rather than read on under a wider limit.
+
+  class ReadLimitExceeded < ProtocolError; end
+
+  ##
   # OpenTimeout, a subclass of Timeout::Error, is raised if a connection cannot
   # be created within the open_timeout.
 
@@ -205,21 +227,31 @@ module Net # :nodoc:
       dest
     end
 
-    def readuntil(terminator, ignore_eof = false)
+    def readuntil(terminator, ignore_eof = false, limit: nil)
+      unless limit.nil? || (Integer === limit && limit > 0)
+        # Integer === calls nothing on limit, and only an Integer is
+        # echoed back, so validation never runs the caller's code.
+        got = Integer === limit ? limit : "a non-Integer"
+        raise ArgumentError, "limit must be a positive Integer, got #{got}"
+      end
       offset = @rbuf_offset
       begin
         until idx = @rbuf.index(terminator, offset)
-          # Rewind by terminator.bytesize - 1 so that a terminator split
-          # across reads is not missed, however many reads it spans.
-          # @rbuf_offset is the floor for two reasons. A negative offset
-          # makes String#index search relative to the end of the buffer,
-          # skipping a match near its start. An offset below @rbuf_offset
-          # matches a terminator beginning inside bytes already returned
-          # to the caller, yielding a slice that does not end with one.
+          if limit && rbuf_size > limit
+            raise ReadLimitExceeded, "exceeded the #{limit} byte read limit"
+          end
+          # Rewind so a terminator split across reads is still found. The
+          # floor guards two things. String#index reads a negative offset
+          # as counting from the end, and an offset below @rbuf_offset
+          # matches inside bytes already returned.
           offset = [@rbuf.bytesize - terminator.bytesize + 1, @rbuf_offset].max
           rbuf_fill
         end
-        return rbuf_consume(idx + terminator.bytesize - @rbuf_offset)
+        len = idx + terminator.bytesize - @rbuf_offset
+        if limit && len > limit
+          raise ReadLimitExceeded, "exceeded the #{limit} byte read limit"
+        end
+        return rbuf_consume(len)
       rescue EOFError
         raise unless ignore_eof
         return rbuf_consume
