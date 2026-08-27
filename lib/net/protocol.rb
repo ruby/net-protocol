@@ -171,7 +171,7 @@ module Net # :nodoc:
     end
 
     def eof?
-      @io.eof?
+      @rbuf_empty && @io.eof?
     end
 
     def closed?
