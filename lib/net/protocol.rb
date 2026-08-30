@@ -275,7 +275,6 @@ module Net # :nodoc:
           @rbuf_offset = 0
         else
           @rbuf << rv
-          rv.clear
         end
         return
       when :wait_readable
