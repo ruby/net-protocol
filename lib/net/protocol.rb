@@ -190,7 +190,7 @@ module Net # :nodoc:
 
     def read(len, dest = ''.b, ignore_eof = false)
       raise ArgumentError, "negative length #{len} given" if len < 0
-      LOG "reading #{len} bytes..."
+      LOG "reading #{len} bytes..." if @debug_output
       read_bytes = 0
       begin
         while read_bytes + rbuf_size < len
@@ -206,7 +206,7 @@ module Net # :nodoc:
       rescue EOFError
         raise unless ignore_eof
       end
-      LOG "read #{read_bytes} bytes"
+      LOG "read #{read_bytes} bytes" if @debug_output
       dest
     end
 
@@ -224,7 +224,7 @@ module Net # :nodoc:
       rescue EOFError
         ;
       end
-      LOG "read #{read_bytes} bytes"
+      LOG "read #{read_bytes} bytes" if @debug_output
       dest
     end
 
@@ -439,7 +439,7 @@ module Net # :nodoc:
       ensure
         LOG_on()
       end
-      LOG "read message (#{read_bytes} bytes)"
+      LOG "read message (#{read_bytes} bytes)" if @debug_output
     end
 
     # *library private* (cannot handle 'break')
@@ -462,7 +462,7 @@ module Net # :nodoc:
     #
 
     def write_message(src)
-      LOG "writing message from #{src.class}"
+      LOG "writing message from #{src.class}" if @debug_output
       LOG_off()
       begin
         len = writing {
@@ -473,7 +473,7 @@ module Net # :nodoc:
       ensure
         LOG_on()
       end
-      LOG "wrote #{len} bytes"
+      LOG "wrote #{len} bytes" if @debug_output
       len
     end
 
@@ -493,7 +493,7 @@ module Net # :nodoc:
       ensure
         LOG_on()
       end
-      LOG "wrote #{len} bytes"
+      LOG "wrote #{len} bytes" if @debug_output
       len
     end
 

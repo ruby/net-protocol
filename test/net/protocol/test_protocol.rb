@@ -426,4 +426,25 @@ class TestProtocol < Test::Unit::TestCase
 
     assert_same debug, imio.debug_output
   end
+
+  def test_debug_output_logs_reads_and_writes
+    debug = "".dup
+    io = Net::BufferedIO.new(StringIO.new("hello world".dup), debug_output: debug)
+    io.read(5)
+    io.read_all
+    assert_equal ["reading 5 bytes...\n", "read 5 bytes\n", "reading all...\n", "read 6 bytes\n"],
+      debug.lines.grep_v(/\A-> /)
+
+    debug = "".dup
+    imio = Net::InternetMessageIO.new(StringIO.new("line\r\n.\r\n".dup), debug_output: debug)
+    imio.each_message_chunk { }
+    assert_equal ["reading message...\n", "read message (6 bytes)\n"], debug.lines.grep_v(/\A-> /)
+
+    debug = "".dup
+    imio = Net::InternetMessageIO.new(StringIO.new("".dup), debug_output: debug)
+    imio.write_message("hello\n")
+    imio.write_message_by_block { |dest| dest.write("hello\n") }
+    assert_equal ["writing message from String\n", "wrote 10 bytes\n", "writing message from block\n", "wrote 10 bytes\n"],
+      debug.lines.grep_v(/\A<- /)
+  end
 end
