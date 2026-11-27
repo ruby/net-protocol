@@ -188,6 +188,12 @@ module Net # :nodoc:
 
     public
 
+    def wait_readable(timeout = @read_timeout)
+      return self if rbuf_size > 0
+      return self if @io.respond_to?(:pending) && @io.pending > 0
+      @io.to_io.wait_readable(timeout) ? self : nil
+    end
+
     def read(len, dest = ''.b, ignore_eof = false)
       raise ArgumentError, "negative length #{len} given" if len < 0
       LOG "reading #{len} bytes..."

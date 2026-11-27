@@ -27,6 +27,29 @@ class TestProtocol < Test::Unit::TestCase
     end
   end
 
+  def test_wait_readable
+    r, w = IO.pipe
+    io = Net::BufferedIO.new(r)
+    assert_nil(io.wait_readable(0))
+    w.write("a\nb\n")
+    assert_same(io, io.wait_readable(0))
+    assert_equal("a", io.readline)
+    assert_same(io, io.wait_readable(0))
+    assert_equal("b", io.readline)
+    assert_nil(io.wait_readable(0))
+  ensure
+    r&.close
+    w&.close
+  end
+
+  def test_wait_readable_ssl_pending
+    sslio = Object.new
+    def sslio.pending; 1; end
+    def sslio.to_io; raise "must not wait on the socket"; end
+    io = Net::BufferedIO.new(sslio)
+    assert_same(io, io.wait_readable(0))
+  end
+
   def create_mockio(capacity: 100, max: nil)
     mockio = Object.new
     mockio.instance_variable_set(:@str, +'')
